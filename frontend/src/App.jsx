@@ -28,6 +28,13 @@ import ApplicantRequirement from './components/applicant_requirement';
 import StudentProfileForm from './components/StudentProfile';
 import EducationalAttainmentForm from './components/EducationalAttainment';
 import FamilyBackgroundForm from './components/FamilyBackground';
+import YearPanel from './components/YearPanel';
+import YearLevelPanel from './components/YearLevelPanel';
+import SemesterPanel from './components/SemesterPanel';
+import SchoolYearPanel from './components/SchoolYearPanel';
+import SchoolYearActivatorPanel from './components/SchoolYearActivatorPanel';
+import RequirementsForm from './components/RequirementsForm';
+import YearUpdateForm from './components/YearUpdateForm';
 
 
 
@@ -78,6 +85,13 @@ function App() {
            <Route path="/student_profile" element={<StudentProfileForm />} />
            <Route path="/educational_attainment" element={<EducationalAttainmentForm />} />
            <Route path="/family_background" element={<FamilyBackgroundForm />} />
+           <Route path="/year_panel" element={<YearPanel />} />
+           <Route path="/year_level_panel" element={<YearLevelPanel />} />
+           <Route path="/semester_panel" element={<SemesterPanel />} />
+           <Route path="/school_year_panel" element={<SchoolYearPanel />} />
+           <Route path="/school_year_activator_panel" element={<SchoolYearActivatorPanel />} />
+           <Route path="/requirements" element={<RequirementsForm />} />
+           <Route path="/year_update_form" element={<YearUpdateForm />} />
           </Routes>
         </main>
         <footer>

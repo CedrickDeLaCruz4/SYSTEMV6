@@ -54,6 +54,24 @@ const Sidebar = () => {
         <li className="hover:bg-gray-700 p-3 rounded">
           <Link to="/student_profile">Student Profile</Link>
         </li>
+        <li className="hover:bg-gray-700 p-3 rounded">
+          <Link to="/year_panel">Year Panel</Link>
+        </li>
+        <li className="hover:bg-gray-700 p-3 rounded">
+          <Link to="/year_level_panel">Year Level Panel</Link>
+        </li>
+        <li className="hover:bg-gray-700 p-3 rounded">
+          <Link to="/semester_panel">Semester Panel</Link>
+        </li>
+        <li className="hover:bg-gray-700 p-3 rounded">
+          <Link to="/school_year_panel">School Year Panel</Link>
+        </li>
+        <li className="hover:bg-gray-700 p-3 rounded">
+          <Link to="/school_year_activator_panel">School Year Activator Panel</Link>
+        </li>
+        <li className="hover:bg-gray-700 p-3 rounded">
+          <Link to="/requirements">Requirements Form</Link>
+        </li>
         <li className="hover:bg-red-700 bg-red-600 p-3 rounded mt-6 text-center cursor-pointer">
           Logout
         </li>

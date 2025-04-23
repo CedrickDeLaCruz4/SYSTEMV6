@@ -472,6 +472,280 @@ app.get('/get_prof', (req, res) => {
 });
 
 
+// Insert into year_table
+// API to add a new year
+app.post("/years", (req, res) => {
+  const { year_description } = req.body;
+  if (!year_description) {
+      return res.status(400).json({ error: "year_description is required" });
+  }
+
+  const query = "INSERT INTO year_table (year_description, status) VALUES (?, 0)";
+  db3.query(query, [year_description], (err, result) => {
+      if (err) {
+          console.error("Insert error:", err);
+          return res.status(500).json({ error: "Insert failed" });
+      }
+      res.status(201).json({ year_id: result.insertId, year_description, status: 0 });
+  });
+});
+
+app.get("/year_table", (req, res) => {
+  const query = "SELECT * FROM year_table";
+  db3.query(query, (err, result) => {
+    if (err) {
+      console.error("Query error:", err);
+      return res.status(500).json({ error: "Query failed" });
+    }
+    res.status(200).json(result);
+  });
+});
+
+//YEAR LEVEL PANEL
+app.post("/years_level", (req, res) => {
+  const { year_level_description } = req.body;
+  if (!year_level_description) {
+      return res.status(400).json({ error: "year_level_description is required" });
+  }
+
+  const query = "INSERT INTO year_level_table (year_level_description) VALUES (?)";
+  db3.query(query, [year_level_description], (err, result) => {
+      if (err) {
+          console.error("Insert error:", err);
+          return res.status(500).json({ error: "Insert failed" });
+      }
+      res.status(201).json({
+          year_level_id: result.insertId,
+          year_level_description,
+      });
+  });
+});
+
+
+app.get("/year_level_table", (req, res) => {
+  const query = "SELECT * FROM year_level_table";
+  db3.query(query, (err, result) => {
+      if (err) {
+          console.error("Query error:", err);
+          return res.status(500).json({ error: "Query failed" });
+      }
+      res.status(200).json(result); // Sending the result (list of year levels)
+  });
+});
+
+//SEMESTER PANEL
+app.post("/semesters", (req, res) => {
+  const { semester_description } = req.body;
+  if (!semester_description) {
+      return res.status(400).json({ error: "semester_description is required" });
+  }
+
+  const query = "INSERT INTO semester_table (semester_description) VALUES (?)";
+  db3.query(query, [semester_description], (err, result) => {
+      if (err) {
+          console.error("Insert error:", err);
+          return res.status(500).json({ error: "Insert failed" });
+      }
+      res.status(201).json({
+          semester_id: result.insertId,
+          semester_description,
+      });
+  });
+});
+
+app.get("/semester_table", (req, res) => {
+  const query = "SELECT * FROM semester_table";
+  db3.query(query, (err, result) => {
+      if (err) {
+          console.error("Query error:", err);
+          return res.status(500).json({ error: "Query failed" });
+      }
+      res.status(200).json(result);
+  });
+});
+
+
+//SCHOOL YEAR PANEL FORM
+// Insert School Year
+app.post("/school_years", (req, res) => {
+  const { year_level_id, semester_id, activator } = req.body;
+
+  if (!year_level_id || !semester_id) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  const insertSchoolYear = () => {
+    const insertQuery = `
+      INSERT INTO school_years (year_level_id, semester_id, activator)
+      VALUES (?, ?, ?)
+    `;
+    db3.query(insertQuery, [year_level_id, semester_id, activator], (err, result) => {
+      if (err) {
+        console.error("Insert error:", err);
+        return res.status(500).json({ error: "Insert failed" });
+      }
+      res.status(201).json({ school_year_id: result.insertId });
+    });
+  };
+
+  // If activating a school year, deactivate all others first
+  if (activator === 1) {
+    const deactivateQuery = `UPDATE school_years SET activator = 0`;
+    db3.query(deactivateQuery, (err) => {
+      if (err) {
+        console.error("Deactivation error:", err);
+        return res.status(500).json({ error: "Deactivation failed" });
+      }
+      insertSchoolYear(); // Proceed to insert after deactivation
+    });
+  } else {
+    insertSchoolYear(); // No need to deactivate others if inserting as inactive
+  }
+});
+
+
+// Fetch School Years (updated JOIN with year_table)
+app.get("/school_years", (req, res) => {
+  const query = `
+    SELECT sy.*, yt.year_description, s.semester_description
+    FROM school_years sy
+    JOIN year_table yt ON sy.year_level_id = yt.year_id
+    JOIN semester_table s ON sy.semester_id = s.semester_id
+  `;
+  db3.query(query, (err, result) => {
+    if (err) {
+      console.error("Fetch error:", err);
+      return res.status(500).json({ error: "Failed to fetch school years" });
+    }
+    res.json(result);
+  });
+});
+
+// Deactivate All School Years
+// Update activator for a specific school year
+app.put("/school_years/:id", (req, res) => {
+  const { id } = req.params;
+  const { activator } = req.body;
+
+  if (activator === 1) {
+    // First deactivate all, then activate the selected one
+    const deactivateAllQuery = "UPDATE school_years SET activator = 0";
+    db3.query(deactivateAllQuery, (err) => {
+      if (err) {
+        console.error("Deactivation error:", err);
+        return res.status(500).json({ error: "Failed to deactivate all school years" });
+      }
+
+      const activateQuery = "UPDATE school_years SET activator = 1 WHERE school_year_id = ?";
+      db3.query(activateQuery, [id], (err) => {
+        if (err) {
+          console.error("Activation error:", err);
+          return res.status(500).json({ error: "Failed to activate school year" });
+        }
+        return res.status(200).json({ message: "School year activated and others deactivated" });
+      });
+    });
+  } else {
+    // Just deactivate the selected one
+    const query = "UPDATE school_years SET activator = 0 WHERE school_year_id = ?";
+    db3.query(query, [id], (err) => {
+      if (err) {
+        console.error("Deactivation error:", err);
+        return res.status(500).json({ error: "Failed to deactivate school year" });
+      }
+      return res.status(200).json({ message: "School year deactivated" });
+    });
+  }
+});
+
+
+
+//REQUIREMENTS FORM
+// POST a requirement
+app.post("/requirements", (req, res) => {
+  const { requirements_description } = req.body;
+  if (!requirements_description) {
+    return res.status(400).json({ error: "Description required" });
+  }
+
+  const query = "INSERT INTO requirements (requirements_description) VALUES (?)";
+  db.query(query, [requirements_description], (err, result) => {
+    if (err) {
+      console.error("Insert error:", err);
+      return res.status(500).json({ error: "Failed to save requirement" });
+    }
+    res.status(201).json({ requirements_id: result.insertId });
+  });
+});
+
+// GET all requirements
+app.get("/requirements", (req, res) => {
+  const query = "SELECT * FROM requirements ORDER BY requirements_id DESC";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Fetch error:", err);
+      return res.status(500).json({ error: "Failed to fetch requirements" });
+    }
+    res.json(results);
+  });
+});
+
+
+
+//YEAR UPDATE FORM
+app.get('/year_table', (req, res) => {
+  db.query('SELECT * FROM year_table', (err, results) => {
+      if (err) {
+          return res.status(500).send("Error fetching years");
+      }
+      res.json(results);
+  });
+});
+
+// routes/yearRoutes.js or inside your main Express file
+
+app.put('/year_table/:id', (req, res) => {
+  const { status } = req.body;
+  const { id } = req.params;
+
+  if (status === 1) {
+    // First deactivate all other years
+    const deactivateQuery = "UPDATE year_table SET status = 0";
+    db3.query(deactivateQuery, (deactivateErr) => {
+      if (deactivateErr) {
+        console.error("Deactivation error:", deactivateErr);
+        return res.status(500).json({ error: "Failed to deactivate all years" });
+      }
+
+      // Activate the selected year
+      const activateQuery = "UPDATE year_table SET status = 1 WHERE year_id = ?";
+      db3.query(activateQuery, [id], (activateErr) => {
+        if (activateErr) {
+          console.error("Activation error:", activateErr);
+          return res.status(500).json({ error: "Failed to activate the selected year" });
+        }
+
+        res.status(200).json({ message: "Year status updated successfully" });
+      });
+    });
+  } else {
+    // Just deactivate the selected year
+    const updateQuery = "UPDATE year_table SET status = 0 WHERE year_id = ?";
+    db3.query(updateQuery, [id], (err) => {
+      if (err) {
+        console.error("Deactivation error:", err);
+        return res.status(500).json({ error: "Failed to deactivate the selected year" });
+      }
+
+      res.status(200).json({ message: "Year deactivated successfully" });
+    });
+  }
+});
+
+
+
+
+
 /* ------------------------------------------- ADM & APPLICANT ----------------------------------------------*/
 // ➤ Upload File from AdmForm
 app.post("/upload", upload.single("file"), (req, res) => {
